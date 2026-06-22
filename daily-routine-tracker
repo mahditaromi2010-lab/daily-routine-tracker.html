@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>هبیت ترکر روزانه | برنامه اصلاح‌شده مهدی</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --green: #238636;
+            --done: #0d419d;
+            --danger: #f85149;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: var(--accent); border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 5px; }
+        .subtitle { margin-bottom: 20px; color: #8b949e; }
+        .controls {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn.save { background: var(--green); }
+        .btn.clear { background: var(--danger); }
+        .day-info {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .day-info h2 { color: var(--accent); }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .schedule-table th, .schedule-table td {
+            border: 1px solid var(--border);
+            padding: 10px 8px;
+            text-align: right;
+            vertical-align: middle;
+        }
+        .schedule-table th {
+            background: #21262d;
+            color: var(--accent);
+            font-weight: bold;
+            text-align: center;
+        }
+        .time-col { width: 110px; color: #f0883e; font-weight: bold; text-align: center; }
+        .task-btn {
+            background: #30363d;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            white-space: normal;
+            text-align: right;
+            width: 100%;
+        }
+        .task-btn.done {
+            background: var(--done);
+            border-color: var(--accent);
+            color: white;
+            text-decoration: line-through;
+        }
+        .task-btn:hover { filter: brightness(1.2); }
+        footer { text-align: center; margin-top: 30px; color: #8b949e; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>🐺 برنامه روزانه اصلاح‌شده – هبیت ترکر</h1>
+    <p class="subtitle">برنامه ساعتی بر اساس مسیر متخصص نفوذ زیرساخت + زندگی سالم</p>
+
+    <div class="controls">
+        <button class="btn save" onclick="saveToday()">💾 ذخیره وضعیت امروز</button>
+        <button class="btn" onclick="loadToday()">📂 بارگذاری وضعیت امروز</button>
+        <button class="btn clear" onclick="clearToday()">🗑️ پاک کردن تیک‌های امروز</button>
+        <span style="margin-right:auto; color:#8b949e;" id="current-date"></span>
+    </div>
+
+    <div class="day-info">
+        <h2 id="day-title">امروز</h2>
+        <p id="day-description"></p>
+    </div>
+
+    <table class="schedule-table" id="schedule">
+        <thead>
+            <tr>
+                <th>ساعت</th>
+                <th>فعالیت</th>
+                <th>وضعیت</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <footer>هر روز تیک بزن. نظم، کلید موفقیت.</footer>
+
+    <script>
+        // تاریخ امروز
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = now.toLocaleDateString('fa-IR', options);
+
+        // تشخیص جمعه (day=5 در getDay که 0 یکشنبه است، پس جمعه 5)
+        const isFriday = now.getDay() === 5;
+        const dayTitle = document.getElementById('day-title');
+        const dayDesc = document.getElementById('day-description');
+
+        // برنامه عادی (شنبه تا پنج‌شنبه)
+        const normalSchedule = [
+            { time: '۰۴:۳۰', task: 'بیدار شدن بدون چرت' },
+            { time: '۰۴:۴۰ - ۰۴:۵۰', task: 'مرتب کردن تخت + مسواک' },
+            { time: '۰۴:۵۰ - ۰۵:۱۰', task: 'ورزش صبحگاهی (کاردیو سبک + تنفس عمیق)' },
+            { time: '۰۵:۱۰ - ۰۵:۲۵', task: 'حمام (آب خنک یا ولرم)' },
+            { time: '۰۵:۲۵ - ۰۵:۵۵', task: 'ایده‌پردازی و برنامه‌ریزی روز (با قلم و کاغذ)' },
+            { time: '۰۵:۵۵ - ۰۶:۲۵', task: 'مرور واژگان انگلیسی (Anki)' },
+            { time: '۰۶:۲۵ - ۰۷:۲۵', task: 'یادگیری زبان انگلیسی (کتاب/اپ)' },
+            { time: '۰۷:۲۵ - ۰۷:۵۵', task: 'صبحانه + استراحت کوتاه (بدون گوشی)' },
+            { time: '۰۷:۵۵ - ۰۸:۵۵', task: 'برنامه‌نویسی (پایتون / JS / Bash)' },
+            { time: '۰۸:۵۵ - ۰۹:۵۵', task: 'مطالعه تئوری CTF (شبکه، وب، باینری)' },
+            { time: '۰۹:۵۵ - ۱۱:۴۰', task: 'فیلم/سریال انگلیسی با زیرنویس انگلیسی' },
+            { time: '۱۱:۴۰ - ۱۲:۴۰', task: 'تمرین عملی CTF (حل چالش PicoCTF / THM)' },
+            { time: '۱۲:۴۰ - ۱۳:۲۵', task: 'کارهای شخصی + مرتب کردن اتاق' },
+            { time: '۱۳:۲۵ - ۱۴:۲۵', task: 'ناهار + استراحت (۱۵ دقیقه دراز بکش)' },
+            { time: '۱۴:۲۵ - ۱۵:۲۵', task: 'انگلیسی (نوشتاری و شنیداری: جمله‌سازی، پادکست)' },
+            { time: '۱۵:۲۵ - ۱۶:۱۰', task: 'کتاب خواندن (تخصصی و غیرتخصصی)' },
+            { time: '۱۶:۱۰ - ۱۷:۱۰', task: 'تحقیق و توسعه ایده‌ها + پروژه شخصی' },
+            { time: '۱۷:۱۰ - ۱۷:۲۵', task: 'آماده‌سازی برای ورزش (تعویض لباس، کشش)' },
+            { time: '۱۷:۲۵ - ۱۸:۴۰', task: 'ورزش حرفه‌ای (کاراته + آمادگی جسمانی)' },
+            { time: '۱۸:۴۰ - ۱۹:۱۰', task: 'دوش بعد از ورزش + استراحت' },
+            { time: '۱۹:۱۰ - ۱۹:۴۰', task: 'شام سبک + مسواک شب' },
+            { time: '۱۹:۴۰ - ۲۰:۱۰', task: 'مرور روزانه (ژورنال: چه یاد گرفتی؟)' },
+            { time: '۲۰:۱۰ - ۲۰:۳۰', task: 'آماده‌سازی خواب (نور کم، مطالعه سبک، بدون موبایل)' },
+            { time: '۲۰:۳۰', task: 'خواب (گوشی بیرون اتاق)' }
+        ];
+
+        // برنامه جمعه (سبک‌تر)
+        const fridaySchedule = [
+            { time: '۰۵:۳۰', task: 'بیدار شدن (بدون عجله)' },
+            { time: '۰۵:۳۰ - ۰۶:۰۰', task: 'مرتب کردن تخت + مسواک + آب گرم' },
+            { time: '۰۶:۰۰ - ۰۶:۳۰', task: 'پیاده‌روی یا کشش سبک' },
+            { time: '۰۶:۳۰ - ۰۷:۰۰', task: 'صبحانه مفصل + استراحت' },
+            { time: '۰۷:۰۰ - ۰۸:۰۰', task: 'مرور واژگان انگلیسی + مطالعه آزاد' },
+            { time: '۰۸:۰۰ - ۱۰:۰۰', task: 'پروژه آزاد یا حل CTF بدون فشار' },
+            { time: '۱۰:۰۰ - ۱۱:۳۰', task: 'فیلم/سریال انگلیسی (دلخواه)' },
+            { time: '۱۱:۳۰ - ۱۲:۳۰', task: 'کارهای عقب‌افتاده هفته' },
+            { time: '۱۲:۳۰ - ۱۴:۰۰', task: 'ناهار + استراحت + چرت کوتاه (اختیاری)' },
+            { time: '۱۴:۰۰ - ۱۵:۳۰', task: 'توسعه فردی یا پروژه شخصی' },
+            { time: '۱۵:۳۰ - ۱۷:۰۰', task: 'ورزش حرفه‌ای (کاراته + آمادگی جسمانی)' },
+            { time: '۱۷:۰۰ - ۱۷:۳۰', task: 'دوش + استراحت' },
+            { time: '۱۷:۳۰ - ۱۸:۳۰', task: 'وقت آزاد با خانواده/دوستان' },
+            { time: '۱۸:۳۰ - ۱۹:۰۰', task: 'شام' },
+            { time: '۱۹:۰۰ - ۲۰:۰۰', task: 'مرور هفتگی و برنامه‌ریزی هفته بعد' },
+            { time: '۲۰:۰۰ - ۲۰:۳۰', task: 'آماده‌سازی خواب' },
+            { time: '۲۰:۳۰', task: 'خواب' }
+        ];
+
+        const schedule = isFriday ? fridaySchedule : normalSchedule;
+        dayTitle.textContent = isFriday ? 'جمعه (برنامه سبک)' : 'امروز (برنامه کامل)';
+        dayDesc.textContent = isFriday ? 'امروز روز استراحت نیمه‌فعاله. فشار رو کم کن ولی حواست به عادت‌ها باشه.' : 'یه روز کامل برای ساختن آینده. تک‌تک تیک‌ها مهمن.';
+
+        // ساخت جدول
+        const tbody = document.querySelector('#schedule tbody');
+        const storageKey = 'routine-' + now.toISOString().split('T')[0];
+
+        schedule.forEach((item, index) => {
+            const tr = document.createElement('tr');
+
+            const tdTime = document.createElement('td');
+            tdTime.className = 'time-col';
+            tdTime.textContent = item.time;
+            tr.appendChild(tdTime);
+
+            const tdTask = document.createElement('td');
+            const btn = document.createElement('button');
+            btn.className = 'task-btn';
+            btn.textContent = item.task;
+            btn.dataset.index = index;
+            btn.addEventListener('click', () => btn.classList.toggle('done'));
+            tdTask.appendChild(btn);
+            tr.appendChild(tdTask);
+
+            const tdStatus = document.createElement('td');
+            tdStatus.style.textAlign = 'center';
+            tdStatus.style.color = '#8b949e';
+            tdStatus.textContent = '⏳';
+            btn.addEventListener('click', () => {
+                tdStatus.textContent = btn.classList.contains('done') ? '✅' : '⏳';
+            });
+            tr.appendChild(tdStatus);
+
+            tbody.appendChild(tr);
+        });
+
+        // توابع ذخیره و بارگذاری
+        function saveToday() {
+            const data = [];
+            document.querySelectorAll('.task-btn').forEach(btn => {
+                data.push({ index: btn.dataset.index, done: btn.classList.contains('done') });
+            });
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            alert('✅ وضعیت امروز ذخیره شد.');
+        }
+
+        function loadToday() {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            document.querySelectorAll('.task-btn').forEach(btn => {
+                const match = data.find(d => d.index == btn.dataset.index);
+                if (match && match.done) {
+                    btn.classList.add('done');
+                    const tdStatus = btn.closest('tr').querySelector('td:last-child');
+                    if (tdStatus) tdStatus.textContent = '✅';
+                }
+            });
+        }
+
+        function clearToday() {
+            if (confirm('همه تیک‌های امروز پاک بشن؟')) {
+                localStorage.removeItem(storageKey);
+                document.querySelectorAll('.task-btn').forEach(btn => {
+                    btn.classList.remove('done');
+                    const tdStatus = btn.closest('tr').querySelector('td:last-child');
+                    if (tdStatus) tdStatus.textContent = '⏳';
+                });
+            }
+        }
+
+        // بارگذاری خودکار
+        loadToday();
+    </script>
+</body>
+</html>
