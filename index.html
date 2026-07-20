@@ -49,6 +49,15 @@
         }
         .btn.save { background: var(--green); }
         .btn.clear { background: var(--danger); }
+        .date-input {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9em;
+        }
         .day-info {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -106,9 +115,10 @@
     <p class="subtitle">مدل ۳-۱-۱ (پایتون + HTML/CSS + Bash) + ورزش صبح ۲ ساعته + آدمک عصر + خواب ۲۰:۳۰</p>
 
     <div class="controls">
-        <button class="btn save" onclick="saveToday()">💾 ذخیره وضعیت امروز</button>
-        <button class="btn" onclick="loadToday()">📂 بارگذاری وضعیت امروز</button>
-        <button class="btn clear" onclick="clearToday()">🗑️ پاک کردن تیک‌های امروز</button>
+        <button class="btn save" onclick="saveToday()">💾 ذخیره وضعیت</button>
+        <button class="btn" onclick="loadToday()">📂 بارگذاری وضعیت</button>
+        <button class="btn clear" onclick="clearToday()">🗑️ پاک کردن تیک‌ها</button>
+        <input type="date" id="datePicker" class="date-input" onchange="changeDate(this.value)">
         <span style="margin-right:auto; color:#8b949e;" id="current-date"></span>
     </div>
 
@@ -131,17 +141,14 @@
     <footer>هر روز تیک بزن. نظم، کلید موفقیت.</footer>
 
     <script>
-        // تاریخ امروز
-        const now = new Date();
+        let currentDate = new Date();
+        document.getElementById('datePicker').value = currentDate.toISOString().split('T')[0];
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('current-date').textContent = now.toLocaleDateString('fa-IR', options);
-        
-        // تشخیص جمعه (day=5 در getDay که 0 یکشنبه است، پس جمعه 5)
+        document.getElementById('current-date').textContent = currentDate.toLocaleDateString('fa-IR', options);
         const dayTitle = document.getElementById('day-title');
-        const isFriday = now.getDay() === 5;
         const dayDesc = document.getElementById('day-description');
 
-        // برنامه عادی (شنبه تا پنج‌شنبه) با مدل ۳-۱-۱ + بیداری ۴ صبح + ورزش ۲ ساعته + آدمک عصر + خواب ۲۰:۳۰
+        // برنامه عادی (شنبه تا پنج‌شنبه) با تغییرات شخصی مهدی
         const normalSchedule = [
             { time: '۰۴:۰۰', task: 'بیدار شدن بدون چرت - شروع روز' },
             { time: '۰۴:۰۰ - ۰۶:۰۰', task: '🏃 ورزش صبحگاهی (۲ ساعت - کاراته + آمادگی جسمانی)' },
@@ -151,33 +158,26 @@
             { time: '۰۷:۰۰ - ۰۷:۳۰', task: 'مرور واژگان انگلیسی (Anki)' },
             { time: '۰۷:۳۰ - ۰۸:۳۰', task: 'یادگیری زبان انگلیسی (کتاب/اپ)' },
             { time: '۰۸:۳۰ - ۰۸:۵۵', task: 'صبحانه + استراحت کوتاه (بدون گوشی)' },
-            // ==============================================
-            // مدل ۳-۱-۱ (صبح: پایتون عمیق)
-            // ==============================================
             { time: '۰۸:۵۵ - ۱۰:۲۵', task: '🐍 پایتون (مطالعه و تمرین عمیق - ۱.۵ ساعت)' },
             { time: '۱۰:۲۵ - ۱۰:۴۰', task: 'استراحت کوتاه (حرکات کششی)' },
-            { time: '۱۰:۴۰ - ۱۲:۱۰', task: '🐍 (دوره ی رایگان تست نفوذ ) پایتون (ادامه + پروژه کوچک - ۱.۵ ساعت)' },
-            // ==============================================
+            { time: '۱۰:۴۰ - ۱۲:۱۰', task: '🐍 (دوره ی رایگان تست نفوذ) پایتون (ادامه + پروژه کوچک - ۱.۵ ساعت)' },
             { time: '۱۲:۱۰ - ۱۲:۵۵', task: 'فیلم/سریال انگلیسی با زیرنویس انگلیسی' },
             { time: '۱۲:۵۵ - ۱۳:۵۵', task: '🌐 HTML/CSS (فرم‌ها، input‌ها، DOM - ۱ ساعت)' },
             { time: '۱۳:۵۵ - ۱۴:۴۰', task: 'کارهای شخصی + مرتب کردن اتاق' },
             { time: '۱۴:۴۰ - ۱۵:۴۰', task: 'ناهار + استراحت (۱۵ دقیقه دراز بکش)' },
             { time: '۱۵:۴۰ - ۱۶:۴۰', task: 'انگلیسی (نوشتاری و شنیداری: جمله‌سازی، پادکست)' },
             { time: '۱۶:۴۰ - ۱۷:۲۵', task: 'کتاب خواندن (تخصصی و غیرتخصصی)' },
-            // ==============================================
-            // عصر: Bash + آدمک
-            // ==============================================
             { time: '۱۷:۲۵ - ۱۸:۲۵', task: '🖥️ Bash/Linux (اسکریپت‌نویسی، grep، awk - ۱ ساعت)' },
             { time: '۱۸:۲۵ - ۱۸:۳۰', task: 'استراحت کوتاه (۵ دقیقه)' },
             { time: '۱۸:۳۰ - ۱۹:۰۰', task: '🥊 تمرین مبارزه با آدمک تمرینی (۳۰ دقیقه)' },
-            { time: '۱۹:۰۰ - ۱۹:۱۰', task: 'دوش سریع'},
+            { time: '۱۹:۰۰ - ۱۹:۱۰', task: 'دوش سریع' },
             { time: '۱۹:۱۰ - ۱۹:۴۰', task: 'شام سبک + مسواک شب' },
             { time: '۱۹:۴۰ - ۲۰:۱۰', task: 'مرور روزانه (ژورنال: چه یاد گرفتی؟)' },
             { time: '۲۰:۱۰ - ۲۰:۳۰', task: 'آماده‌سازی خواب (نور کم، مطالعه سبک، بدون موبایل)' },
             { time: '۲۰:۳۰', task: 'خواب (گوشی بیرون اتاق)' }
         ];
 
-        // برنامه جمعه (سبک‌تر)
+        // برنامه جمعه
         const fridaySchedule = [
             { time: '۰۵:۳۰', task: 'بیدار شدن (بدون عجله)' },
             { time: '۰۵:۳۰ - ۰۶:۰۰', task: 'مرتب کردن تخت + مسواک + آب گرم' },
@@ -198,54 +198,55 @@
             { time: '۲۰:۳۰', task: 'خواب' }
         ];
 
-        const schedule = isFriday ? fridaySchedule : normalSchedule;
-        dayTitle.textContent = isFriday ? 'جمعه (برنامه سبک)' : 'امروز (برنامه کامل - مدل ۳-۱-۱ + آدمک)';
-        dayDesc.textContent = isFriday ? 'امروز روز استراحت نیمه‌فعاله. فشار رو کم کن ولی حواست به عادت‌ها باشه.' : 'پایتون ۳h + HTML/CSS ۱h + Bash ۱h + آدمک عصر. خواب ۲۰:۳۰.';
-
-        // ساخت جدول
-        const tbody = document.querySelector('#schedule tbody');
-        const storageKey = 'routine-final-' + now.toISOString().split('T')[0];
-
-        schedule.forEach((item, index) => {
-            const tr = document.createElement('tr');
-
-            const tdTime = document.createElement('td');
-            tdTime.className = 'time-col';
-            tdTime.textContent = item.time;
-            tr.appendChild(tdTime);
-
-            const tdTask = document.createElement('td');
-            const btn = document.createElement('button');
-            btn.className = 'task-btn';
-            btn.textContent = item.task;
-            btn.dataset.index = index;
-            btn.addEventListener('click', () => btn.classList.toggle('done'));
-            tdTask.appendChild(btn);
-            tr.appendChild(tdTask);
-
-            const tdStatus = document.createElement('td');
-            tdStatus.style.textAlign = 'center';
-            tdStatus.style.color = '#8b949e';
-            tdStatus.textContent = '⏳';
-            btn.addEventListener('click', () => {
-                tdStatus.textContent = btn.classList.contains('done') ? '✅' : '⏳';
+        function buildTable(date) {
+            const isFriday = date.getDay() === 5;
+            const schedule = isFriday ? fridaySchedule : normalSchedule;
+            dayTitle.textContent = isFriday ? 'جمعه (برنامه سبک)' : 'امروز (برنامه کامل - مدل ۳-۱-۱ + آدمک)';
+            dayDesc.textContent = isFriday ? 'امروز روز استراحت نیمه‌فعاله. فشار رو کم کن ولی حواست به عادت‌ها باشه.' : 'پایتون ۳h + HTML/CSS ۱h + Bash ۱h + آدمک عصر. خواب ۲۰:۳۰.';
+            const tbody = document.querySelector('#schedule tbody');
+            tbody.innerHTML = '';
+            schedule.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const tdTime = document.createElement('td');
+                tdTime.className = 'time-col';
+                tdTime.textContent = item.time;
+                tr.appendChild(tdTime);
+                const tdTask = document.createElement('td');
+                const btn = document.createElement('button');
+                btn.className = 'task-btn';
+                btn.textContent = item.task;
+                btn.dataset.index = index;
+                btn.addEventListener('click', () => btn.classList.toggle('done'));
+                tdTask.appendChild(btn);
+                tr.appendChild(tdTask);
+                const tdStatus = document.createElement('td');
+                tdStatus.style.textAlign = 'center';
+                tdStatus.style.color = '#8b949e';
+                tdStatus.textContent = '⏳';
+                btn.addEventListener('click', () => {
+                    tdStatus.textContent = btn.classList.contains('done') ? '✅' : '⏳';
+                });
+                tr.appendChild(tdStatus);
+                tbody.appendChild(tr);
             });
-            tr.appendChild(tdStatus);
+        }
 
-            tbody.appendChild(tr);
-        });
+        function getStorageKey(date) {
+            return 'routine-final-' + date.toISOString().split('T')[0];
+        }
 
-        // توابع ذخیره و بارگذاری
         function saveToday() {
+            const storageKey = getStorageKey(currentDate);
             const data = [];
             document.querySelectorAll('.task-btn').forEach(btn => {
                 data.push({ index: btn.dataset.index, done: btn.classList.contains('done') });
             });
             localStorage.setItem(storageKey, JSON.stringify(data));
-            alert('✅ وضعیت امروز ذخیره شد.');
+            alert('✅ وضعیت ذخیره شد.');
         }
 
         function loadToday() {
+            const storageKey = getStorageKey(currentDate);
             const raw = localStorage.getItem(storageKey);
             if (!raw) return;
             const data = JSON.parse(raw);
@@ -260,7 +261,8 @@
         }
 
         function clearToday() {
-            if (confirm('همه تیک‌های امروز پاک بشن؟')) {
+            if (confirm('همه تیک‌های این تاریخ پاک بشن؟')) {
+                const storageKey = getStorageKey(currentDate);
                 localStorage.removeItem(storageKey);
                 document.querySelectorAll('.task-btn').forEach(btn => {
                     btn.classList.remove('done');
@@ -270,7 +272,16 @@
             }
         }
 
-        // بارگذاری خودکار
+        function changeDate(dateStr) {
+            if (!dateStr) return;
+            const parts = dateStr.split('-');
+            currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            document.getElementById('current-date').textContent = currentDate.toLocaleDateString('fa-IR', options);
+            buildTable(currentDate);
+            loadToday();
+        }
+
+        buildTable(currentDate);
         loadToday();
     </script>
 </body>
